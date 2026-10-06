@@ -132,6 +132,12 @@ function Products() {
             <button className="btn btn-success ms-3 fw-bold">Inventory</button>
           </a>
 
+          <a href="/clientPickupPoint">
+            <button className="btn btn-success ms-3 fw-bold">PickupPoint</button>
+          </a>
+
+
+
           {/* <span className="badge bg-success fs-6 px-3 py-2">
                 {products.length} Products
               </span> */}

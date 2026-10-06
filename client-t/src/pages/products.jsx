@@ -237,7 +237,7 @@ function Products() {
         {/* Loading */}
         {loading && (
           <div className="text-center mb-4">
-            <div className="spinner-border text-success"></div>
+            <div className="spinner-border text-primary"></div>
           </div>
         )}
 

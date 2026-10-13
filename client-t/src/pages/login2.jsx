@@ -1,4 +1,6 @@
 import axios from "axios";
+import { signInWithPopup } from "firebase/auth";
+import { auth, googleProvider } from "../firebase/firebase-config";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -34,6 +36,46 @@ const Login2 = () => {
       window.location.href = "/profile";
     }
   }, [isLoggedIn]);
+
+
+  const loginWithGoogle = async () => {
+    try {
+      const result = await signInWithPopup(auth, googleProvider);
+      const user = result.user;
+
+      localStorage.setItem("uid", user.uid);
+      const userData = {
+        uid: user.uid,
+        name: user.displayName || user.email,
+        email: user.email,
+        avatar: user.photoURL || "",
+        phone: user.phoneNumber || "",
+      };
+      localStorage.setItem("user", JSON.stringify(userData));
+      window.dispatchEvent(new Event("userChange"));
+
+      try {
+        const existingUser = await getUserByUid(user.uid);
+        if (!existingUser) {
+          await createUser({
+            uid: user.uid,
+            name: user.displayName,
+            email: user.email,
+            avatar: user.photoURL,
+            phone: user.phoneNumber || "",
+            createdAt: new Date().toISOString(),
+          });
+        }
+      } catch (apiError) {
+        console.warn("Не удалось сохранить в mockapi, но в Firebase вошли:", apiError);
+      }
+
+      navigate("/profile");
+    } catch (error) {
+      console.error("Ошибка входа через Google:", error);
+      alert("Ошибка входа через Google: " + (error.message || error.code));
+    }
+  };
 
   return (
     <div
@@ -123,7 +165,7 @@ const Login2 = () => {
           </div>
   
           {/* Google */}
-          <button className="btn btn-light border w-100 rounded-4 py-2 fw-semibold shadow-sm">
+          <button className="btn btn-light border w-100 rounded-4 py-2 fw-semibold shadow-sm" onClick={loginWithGoogle}>
             <i className="fa-brands fa-google text-danger me-2"></i>
             Войти через Google
           </button>

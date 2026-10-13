@@ -44,23 +44,39 @@ const Login = () => {
       const user = result.user;
 
       localStorage.setItem("uid", user.uid);
+      const userData = {
+        uid: user.uid,
+        name: user.displayName || user.email,
+        email: user.email,
+        avatar: user.photoURL || "",
+        phone: user.phoneNumber || "",
+      };
+      localStorage.setItem("user", JSON.stringify(userData));
+      window.dispatchEvent(new Event("userChange"));
 
-      const existingUser = await getUserByUid(user.uid);
-
-      if (!existingUser) {
-        await createUser({
-          uid: user.uid,
-          name: user.displayName,
-          email: user.email,
-          avatar: user.photoURL,
-          phone: user.phoneNumber || "",
-          createdAt: new Date().toISOString(),
-        });
+      try {
+        const existingUser = await getUserByUid(user.uid);
+        if (!existingUser) {
+          await createUser({
+            uid: user.uid,
+            name: user.displayName,
+            email: user.email,
+            avatar: user.photoURL,
+            phone: user.phoneNumber || "",
+            createdAt: new Date().toISOString(),
+          });
+        }
+      } catch (apiError) {
+        console.warn(
+          "Не удалось сохранить в mockapi, но в Firebase вошли:",
+          apiError
+        );
       }
 
-      navigate("/products");
+      navigate("/profile");
     } catch (error) {
-      console.error("Ошибка входа:", error);
+      console.error("Ошибка входа через Google:", error);
+      alert("Ошибка входа через Google: " + (error.message || error.code));
     }
   };
 
@@ -68,16 +84,13 @@ const Login = () => {
     <div className="container d-flex justify-content-center align-items-center vh-100">
       <div className="col-md-5 col-lg-4">
         <div className="card shadow-lg border-0 rounded-4 p-4">
-  
           {/* Header */}
           <div className="text-center mb-3">
             <i className="fa-solid fa-user fs-2 text-primary mb-2"></i>
             <h3 className="fw-bold">Регистрация</h3>
-            <p className="text-muted small">
-              Создайте новую учетную запись
-            </p>
+            <p className="text-muted small">Создайте новую учетную запись</p>
           </div>
-  
+
           {/* Username */}
           <div className="mb-3">
             <label className="form-label fw-semibold">Имя пользователя</label>
@@ -89,7 +102,7 @@ const Login = () => {
             />
             <div className="form-text">Минимум 3 символа</div>
           </div>
-  
+
           {/* Email */}
           <div className="mb-3">
             <label className="form-label fw-semibold">Email</label>
@@ -100,7 +113,7 @@ const Login = () => {
               onChange={(e) => setEmail(e.target.value)}
             />
           </div>
-  
+
           {/* Password */}
           <div className="mb-3">
             <label className="form-label fw-semibold">Пароль</label>
@@ -112,15 +125,18 @@ const Login = () => {
             />
             <div className="form-text">Минимум 6 символов</div>
           </div>
-  
+
           {/* Button */}
-          <button className="btn btn-primary w-100 rounded-3 fw-semibold mb-3" onClick={register}>
+          <button
+            className="btn btn-primary w-100 rounded-3 fw-semibold mb-3"
+            onClick={register}
+          >
             Создать аккаунт
           </button>
-  
+
           {/* Divider */}
           <div className="text-center text-muted mb-2">или</div>
-  
+
           {/* Google */}
           <button
             onClick={loginWithGoogle}
@@ -129,7 +145,6 @@ const Login = () => {
             <i className="fa-brands fa-google me-2"></i>
             Войти через Google
           </button>
-  
         </div>
       </div>
     </div>

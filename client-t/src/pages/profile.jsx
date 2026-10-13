@@ -6,13 +6,13 @@ const Profile = () => {
 
   useEffect(() => {
     if (!isLoggedIn) {
-      window.location.href = "/login";
+      window.location.href = "/";
     }
   }, [isLoggedIn]);
 
   const LogOut = () => {
     localStorage.removeItem("user");
-    window.location.href = "/";
+    window.location.href = "/login2";
   };
 
   return (

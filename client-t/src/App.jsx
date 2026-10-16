@@ -13,7 +13,8 @@ import Edit from "./pages/edit";
 import Favorites from "./pages/favorites";
 import Inventory from "./pages/inventory";
 import OrdersDetail from "./pages/orders-details";
-import ClientPickupPoint from "./pages/clientpickupPoint";
+import ClientPickupPoint from "./pages/clientPickupPoint";
+import PickupPointsList from "./pages/pickupPointsLists";
 
 
 function App() {
@@ -41,6 +42,7 @@ function App() {
           <Route path='/inventory' element={<Inventory/>} />
           <Route path="/orders/:id" element={<OrdersDetail />} />
           <Route path="/clientPickupPoint" element={<ClientPickupPoint/>} />
+          <Route path="/pickupPointsList" element={<PickupPointsList/>} />
         </Routes>
       </Router>
     </div>

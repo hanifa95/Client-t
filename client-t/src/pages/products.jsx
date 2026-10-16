@@ -132,7 +132,7 @@ function Products() {
             <button className="btn btn-success ms-3 fw-bold">Inventory</button>
           </a>
 
-          <a href="/clientPickupPoint">
+          <a href="/PickupPointsList">
             <button className="btn btn-success ms-3 fw-bold">PickupPoint</button>
           </a>
 

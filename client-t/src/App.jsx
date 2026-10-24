@@ -17,6 +17,8 @@ import ClientPickupPoint from "./pages/clientPickupPoint";
 import PickupPointsList from "./pages/pickupPointsLists";
 
 
+
+
 function App() {
   return (
     <div>
@@ -43,6 +45,8 @@ function App() {
           <Route path="/orders/:id" element={<OrdersDetail />} />
           <Route path="/clientPickupPoint" element={<ClientPickupPoint/>} />
           <Route path="/pickupPointsList" element={<PickupPointsList/>} />
+          
+          
         </Routes>
       </Router>
     </div>

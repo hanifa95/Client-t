@@ -1,14 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import axios from "axios";
 import L from "leaflet";
 
-import {
-  MapContainer,
-  TileLayer,
-  Marker,
-  Popup,
-  useMap,
-} from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 
 import "leaflet/dist/leaflet.css";
 import "bootstrap/dist/css/bootstrap.min.css";
@@ -17,8 +11,7 @@ import markerIcon from "leaflet/dist/images/marker-icon.png";
 import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
 import markerShadow from "leaflet/dist/images/marker-shadow.png";
 
-const API_URL =
-  "https://6953a084a319a928023c1129.mockapi.io/pickupPoints";
+const API_URL = "https://6953a084a319a928023c1129.mockapi.io/pickupPoints";
 
 const BISHKEK = [42.8746, 74.5698];
 
@@ -34,9 +27,7 @@ L.Icon.Default.mergeOptions({
 // Поддерживаются lat/long и latitude/longitude.
 function getCoordinates(point) {
   const lat = Number(point.lat ?? point.latitude);
-  const lng = Number(
-    point.long ?? point.lng ?? point.longitude
-  );
+  const lng = Number(point.long ?? point.lng ?? point.longitude);
 
   if (
     !Number.isFinite(lat) ||
@@ -72,6 +63,13 @@ export default function PickupPointsList() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("Все");
   const [selectedPoint, setSelectedPoint] = useState(null);
+  const mapSectionRef = useRef(null);
+
+  const [mapSearch, setMapSearch] = useState("");
+  const [mapResults, setMapResults] = useState([]);
+  const [mapSearchLoading, setMapSearchLoading] = useState(false);
+  const [mapSearchError, setMapSearchError] = useState("");
+  const [mapPosition, setMapPosition] = useState(null);
 
   // Загрузка всех пунктов из MockAPI
   async function loadPoints() {
@@ -80,9 +78,7 @@ export default function PickupPointsList() {
 
     try {
       const response = await axios.get(API_URL);
-      const data = Array.isArray(response.data)
-        ? response.data
-        : [];
+      const data = Array.isArray(response.data) ? response.data : [];
 
       setPoints(data);
     } catch (err) {
@@ -104,18 +100,16 @@ export default function PickupPointsList() {
     const query = search.trim().toLowerCase();
 
     return points.filter((point) => {
-      const matchesSearch = [
-        point.name,
-        point.address,
-        point.phone,
-      ].some((value) =>
-        String(value ?? "").toLowerCase().includes(query)
+      const matchesSearch = [point.name, point.address, point.phone].some(
+        (value) =>
+          String(value ?? "")
+            .toLowerCase()
+            .includes(query)
       );
 
       const status = point.status || "Открыт";
 
-      const matchesStatus =
-        statusFilter === "Все" || status === statusFilter;
+      const matchesStatus = statusFilter === "Все" || status === statusFilter;
 
       return matchesSearch && matchesStatus;
     });
@@ -133,9 +127,7 @@ export default function PickupPointsList() {
     (point) => point.status === "Временно закрыт"
   ).length;
 
-  const selectedPosition = selectedPoint
-    ? getCoordinates(selectedPoint)
-    : null;
+  const selectedPosition = selectedPoint ? getCoordinates(selectedPoint) : null;
 
   const mapCenter = selectedPosition || BISHKEK;
 
@@ -146,7 +138,67 @@ export default function PickupPointsList() {
   }
 
   function selectPoint(point) {
+    const position = getCoordinates(point);
+
+    if (!position) return;
+
     setSelectedPoint(point);
+    setMapPosition(position);
+
+    mapSectionRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  }
+
+  async function handleMapSearch(e) {
+    e?.preventDefault();
+
+    const query = mapSearch.trim();
+
+    if (!query) return;
+
+    setMapSearchLoading(true);
+    setMapSearchError("");
+    setMapResults([]);
+
+    try {
+      const response = await axios.get(
+        "https://nominatim.openstreetmap.org/search",
+        {
+          params: {
+            format: "jsonv2",
+            q: query,
+            countrycodes: "kg",
+            limit: 5,
+            addressdetails: 1,
+          },
+          headers: {
+            "Accept-Language": "ru",
+          },
+        }
+      );
+
+      if (response.data.length === 0) {
+        setMapSearchError("Адрес не найден. Попробуйте уточнить запрос.");
+      } else {
+        setMapResults(response.data);
+      }
+    } catch (err) {
+      console.error("Ошибка поиска адреса:", err);
+      setMapSearchError("Не удалось выполнить поиск. Попробуйте ещё раз.");
+    } finally {
+      setMapSearchLoading(false);
+    }
+  }
+
+  function selectMapAddress(result) {
+    const position = [Number(result.lat), Number(result.lon)];
+
+    setMapPosition(position);
+    setMapSearch(result.display_name);
+    setMapResults([]);
+    setMapSearchError("");
   }
 
   return (
@@ -160,10 +212,7 @@ export default function PickupPointsList() {
       {/* Заголовок */}
       <div className="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
         <div>
-          <h2 className="fw-bold mb-1">
-            📦 Все пункты выдачи
-          </h2>
-          
+          <h2 className="fw-bold mb-1">📦 Все пункты выдачи</h2>
         </div>
 
         <button
@@ -193,12 +242,8 @@ export default function PickupPointsList() {
         <div className="col-6 col-xl-3">
           <div className="card border-0 shadow-sm h-100">
             <div className="card-body">
-              <div className="text-muted small">
-                Всего пунктов
-              </div>
-              <h3 className="fw-bold mb-0">
-                {points.length}
-              </h3>
+              <div className="text-muted small">Всего пунктов</div>
+              <h3 className="fw-bold mb-0">{points.length}</h3>
             </div>
           </div>
         </div>
@@ -206,12 +251,8 @@ export default function PickupPointsList() {
         <div className="col-6 col-xl-3">
           <div className="card border-0 shadow-sm h-100">
             <div className="card-body">
-              <div className="text-muted small">
-                🟢 Открыты
-              </div>
-              <h3 className="fw-bold text-success mb-0">
-                {openCount}
-              </h3>
+              <div className="text-muted small">🟢 Открыты</div>
+              <h3 className="fw-bold text-success mb-0">{openCount}</h3>
             </div>
           </div>
         </div>
@@ -219,12 +260,8 @@ export default function PickupPointsList() {
         <div className="col-6 col-xl-3">
           <div className="card border-0 shadow-sm h-100">
             <div className="card-body">
-              <div className="text-muted small">
-                🔴 Закрыты
-              </div>
-              <h3 className="fw-bold text-danger mb-0">
-                {closedCount}
-              </h3>
+              <div className="text-muted small">🔴 Закрыты</div>
+              <h3 className="fw-bold text-danger mb-0">{closedCount}</h3>
             </div>
           </div>
         </div>
@@ -232,74 +269,90 @@ export default function PickupPointsList() {
         <div className="col-6 col-xl-3">
           <div className="card border-0 shadow-sm h-100">
             <div className="card-body">
-              <div className="text-muted small">
-                🟡 Временно закрыты
-              </div>
-              <h3 className="fw-bold text-warning mb-0">
-                {temporaryCount}
-              </h3>
+              <div className="text-muted small">🟡 Временно закрыты</div>
+              <h3 className="fw-bold text-warning mb-0">{temporaryCount}</h3>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Поиск и фильтры */}
-      <div className="card border-0 shadow-sm mb-4">
-        <div className="card-body">
-          <div className="row g-3">
-            <div className="col-lg-8">
-              <label className="form-label fw-semibold">
-                Поиск пункта выдачи
-              </label>
-              <input
-                className="form-control"
-                type="search"
-                placeholder="Введите название, адрес или телефон..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
-            </div>
+ 
 
-            <div className="col-lg-4">
+   
+
+      {/* Поиск адреса на карте */}
+
+      {/* Поиск адреса на карте и главная карта */}
+      <div ref={mapSectionRef}>
+        <div className="card border-0 shadow-sm mb-4">
+          <div className="card-body p-3 p-md-4">
+            <form onSubmit={handleMapSearch}>
               <label className="form-label fw-semibold">
-                Фильтр по статусу
+                🔎 Поиск адреса на карте
               </label>
-              <select
-                className="form-select"
-                value={statusFilter}
-                onChange={(e) =>
-                  setStatusFilter(e.target.value)
-                }
-              >
-                <option value="Все">Все статусы</option>
-                <option value="Открыт">Открыт</option>
-                <option value="Закрыт">Закрыт</option>
-                <option value="Временно закрыт">
-                  Временно закрыт
-                </option>
-              </select>
-            </div>
+
+              <div className="input-group">
+                <input
+                  type="search"
+                  className="form-control"
+                  placeholder="Введите улицу, дом или адрес в Бишкеке..."
+                  value={mapSearch}
+                  onChange={(e) => {
+                    setMapSearch(e.target.value);
+                    setMapResults([]);
+                    setMapSearchError("");
+                  }}
+                />
+
+                <button
+                  className="btn btn-primary"
+                  type="submit"
+                  disabled={mapSearchLoading || !mapSearch.trim()}
+                >
+                  {mapSearchLoading ? "Поиск..." : "Найти"}
+                </button>
+              </div>
+            </form>
+
+            {mapSearchError && (
+              <div className="alert alert-warning mt-3 mb-0">
+                {mapSearchError}
+              </div>
+            )}
+
+            {mapResults.length > 0 && (
+              <div className="list-group mt-3">
+                {mapResults.map((result) => (
+                  <button
+                    key={result.place_id}
+                    type="button"
+                    className="list-group-item list-group-item-action"
+                    onClick={() => selectMapAddress(result)}
+                  >
+                    📍 {result.display_name}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </div>
+
+        {/* Главная карта */}
+        {/* Здесь оставь существующую карточку с MapContainer */}
       </div>
 
-      {/* Карта всех пунктов */}
       <div className="card border-0 shadow-sm mb-4">
         <div className="card-body p-3 p-md-4">
           <div className="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
             <div>
-              <h5 className="fw-bold mb-1">
-                🗺 Карта пунктов выдачи
-              </h5>
+              <h5 className="fw-bold mb-1">🗺 Карта пунктов выдачи</h5>
               <p className="text-muted small mb-0">
                 Маркеры соответствуют отфильтрованным пунктам
               </p>
             </div>
 
             <span className="badge text-bg-primary">
-              {filteredPoints.filter(
-                (point) => getCoordinates(point)
-              ).length}{" "}
+              {filteredPoints.filter((point) => getCoordinates(point)).length}{" "}
               на карте
             </span>
           </div>
@@ -323,7 +376,7 @@ export default function PickupPointsList() {
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
               />
 
-              <MapFocus position={selectedPosition} />
+              <MapFocus position={mapPosition || selectedPosition} />
 
               {filteredPoints.map((point) => {
                 const position = getCoordinates(point);
@@ -331,18 +384,12 @@ export default function PickupPointsList() {
                 if (!position) return null;
 
                 return (
-                  <Marker
-                    key={point.id}
-                    position={position}
-                  >
+                  <Marker key={point.id} position={position}>
                     <Popup>
-                      <strong>
-                        {point.name || "Пункт выдачи"}
-                      </strong>
+                      <strong>{point.name || "Пункт выдачи"}</strong>
                       <br />
                       📍 {point.address || "Адрес не указан"}
-                      <br />
-                      ☎ {point.phone || "Телефон не указан"}
+                      <br />☎ {point.phone || "Телефон не указан"}
                       <br />
                       🕒 {point.schedule || "График не указан"}
                       <br />
@@ -354,13 +401,10 @@ export default function PickupPointsList() {
             </MapContainer>
           </div>
 
-          {filteredPoints.some(
-            (point) => !getCoordinates(point)
-          ) && (
+          {filteredPoints.some((point) => !getCoordinates(point)) && (
             <div className="alert alert-warning mt-3 mb-0 small">
-              Некоторые пункты не отображаются на карте,
-              потому что у них отсутствуют корректные
-              координаты lat и long.
+              Некоторые пункты не отображаются на карте, потому что у них
+              отсутствуют корректные координаты lat и long.
             </div>
           )}
         </div>
@@ -368,9 +412,7 @@ export default function PickupPointsList() {
 
       {/* Список карточек */}
       <div className="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-        <h5 className="fw-bold mb-0">
-          Список пунктов
-        </h5>
+        <h5 className="fw-bold mb-0">Список пунктов</h5>
 
         <span className="text-muted small">
           Найдено: {filteredPoints.length}
@@ -380,22 +422,15 @@ export default function PickupPointsList() {
       {loading ? (
         <div className="card border-0 shadow-sm">
           <div className="card-body text-center py-5">
-            <div
-              className="spinner-border text-primary mb-3"
-              role="status"
-            />
-            <p className="text-muted mb-0">
-              Загружаем пункты выдачи...
-            </p>
+            <div className="spinner-border text-primary mb-3" role="status" />
+            <p className="text-muted mb-0">Загружаем пункты выдачи...</p>
           </div>
         </div>
       ) : filteredPoints.length === 0 ? (
         <div className="card border-0 shadow-sm">
           <div className="card-body text-center py-5">
             <div style={{ fontSize: 42 }}>📭</div>
-            <h5 className="mt-3">
-              Пункты выдачи не найдены
-            </h5>
+            <h5 className="mt-3">Пункты выдачи не найдены</h5>
             <p className="text-muted mb-3">
               {points.length === 0
                 ? "В базе пока нет пунктов выдачи."
@@ -416,10 +451,7 @@ export default function PickupPointsList() {
       ) : (
         <div className="row g-3">
           {filteredPoints.map((point) => (
-            <div
-              className="col-md-6 col-xl-4"
-              key={point.id}
-            >
+            <div className="col-md-6 col-xl-4" key={point.id}>
               <div className="card border-0 shadow-sm h-100">
                 <div className="card-body p-4">
                   <div className="d-flex justify-content-between align-items-start gap-2 mb-3">
@@ -444,25 +476,16 @@ export default function PickupPointsList() {
                   <hr />
 
                   <div className="mb-3">
-                    <div className="text-muted small mb-1">
-                      📍 Адрес
-                    </div>
-                    <div>
-                      {point.address || "Не указан"}
-                    </div>
+                    <div className="text-muted small mb-1">📍 Адрес</div>
+                    <div>{point.address || "Не указан"}</div>
                   </div>
 
                   <div className="mb-3">
-                    <div className="text-muted small mb-1">
-                      ☎ Телефон
-                    </div>
+                    <div className="text-muted small mb-1">☎ Телефон</div>
                     <div>
                       {point.phone ? (
                         <a
-                          href={`tel:${point.phone.replace(
-                            /[^\d+]/g,
-                            ""
-                          )}`}
+                          href={`tel:${point.phone.replace(/[^\d+]/g, "")}`}
                           className="text-decoration-none"
                         >
                           {point.phone}
@@ -477,15 +500,12 @@ export default function PickupPointsList() {
                     <div className="text-muted small mb-1">
                       🕒 График работы
                     </div>
-                    <div>
-                      {point.schedule || "Не указан"}
-                    </div>
+                    <div>{point.schedule || "Не указан"}</div>
                   </div>
 
                   {getCoordinates(point) && (
                     <div className="text-muted small mb-3">
-                      🌐{" "}
-                      {getCoordinates(point)[0].toFixed(6)}
+                      🌐 {getCoordinates(point)[0].toFixed(6)}
                       {", "}
                       {getCoordinates(point)[1].toFixed(6)}
                     </div>

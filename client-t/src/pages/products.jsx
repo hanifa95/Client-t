@@ -2,6 +2,8 @@ import { useState } from "react";
 import { useEffect } from "react";
 import axios from "axios";
 
+const USD_TO_KGS = 87.85;
+
 function Products() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -127,16 +129,15 @@ function Products() {
             <button className="btn btn-success form-control">Order</button>
           </a>
 
-          
           <a href="/inventory">
             <button className="btn btn-success ms-3 fw-bold">Inventory</button>
           </a>
 
           <a href="/PickupPointsList">
-            <button className="btn btn-success ms-3 fw-bold">PickupPoint</button>
+            <button className="btn btn-success ms-3 fw-bold">
+              PickupPoint
+            </button>
           </a>
-
-
 
           {/* <span className="badge bg-success fs-6 px-3 py-2">
                 {products.length} Products
@@ -158,21 +159,27 @@ function Products() {
           <div className="card-body">
             <div className="d-flex justify-content-between align-items-center">
               <div>
-                <h3 className="fw-bold text-success">🛒 Shopping Cart</h3>
+                <h3 className="fw-bold text-success">
+                  🛒 Shopping Cart ({cart.length})
+                </h3>
 
                 {cart.length === 0 ? (
                   <p className="text-muted mb-0">Your cart is empty</p>
                 ) : (
                   <ul className="list-group mt-3">
-                    {cart.map((product) => (
+                    {cart.map((product, index) => (
                       <li
-                        key={product.id}
+                        key={`${product.id}-${index}`}
                         className="list-group-item d-flex justify-content-between align-items-center"
                       >
-                        <span>{product.name}</span>
+                        <span>
+                          {product.title || product.name || product.description}
+                        </span>
 
                         <span className="badge bg-success rounded-pill">
-                          ${product.price}
+                          {Number(product.price).toLocaleString("ru-RU")} сом
+                          {" / "}$
+                          {(Number(product.price) / USD_TO_KGS).toFixed(2)}
                         </span>
                       </li>
                     ))}
@@ -192,7 +199,7 @@ function Products() {
         {/* Favorites */}
         <div className="card shadow border-0 rounded-4 mb-5">
           <div className="card-body">
-            <a href="/favorites">
+            {/* <a href="/favorites">
               <button
                 className="btn btn-danger"
                 onClick={() => handleFavorite(product)}
@@ -200,6 +207,9 @@ function Products() {
                 {" "}
                 ❤️Favorites
               </button>
+            </a> */}
+            <a href="/favorites" className="btn btn-danger">
+              ❤️ Favorites
             </a>
 
             <h3 className="fw-bold text-danger text-center p-3">
@@ -322,12 +332,16 @@ function Products() {
                 <div className="card-body d-flex flex-column">
                   {/* <h5 className="fw-bold">{product.name}</h5> */}
 
-                  <h4 className="">
-                    {product.description}
-                  </h4>
+                  <h4 className="">{product.description}</h4>
 
-                  <div className="d-flex justify-content-between align-items-center mb-3">
-                    <h4 className="text-success fw-bold">${product.price}</h4>
+                  <div>
+                    <h4 className="text-success fw-bold">
+                      {Number(product.price).toLocaleString("ru-RU")} сом
+                    </h4>
+
+                    <p className="text-muted mb-0">
+                      ${(Number(product.price) / USD_TO_KGS).toFixed(2)}
+                    </p>
 
                     <span className="badge bg-secondary">
                       {product.category}
@@ -342,7 +356,7 @@ function Products() {
                   </button> */}
 
                   <button
-                    className="btn btn-success mb-3 "
+                    className="btn btn-success mb-3 mt-4"
                     onClick={() => handleAddToCart(product)}
                   >
                     🛒 Add to Cart

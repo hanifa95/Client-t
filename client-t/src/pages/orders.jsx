@@ -80,6 +80,11 @@ const Orders = () => {
                     <p className="mb-0">{order.address}</p>
                   </div>
 
+                  <div className="mb-3">
+                    <small className="text-muted">Weight</small>
+                    <p className="mb-0">{order.weight}</p>
+                  </div>
+
                   {/* <div className="mb-3">
                         <small className="text-muted">Total</small>
                         <h5 className="text-success">

@@ -33,6 +33,7 @@
       const [customerName, setCustomerName] = useState("");
       const [customerPhone, setCustomerPhone] = useState("");
       const [address, setAddress] = useState("");
+      const [weight, setWeight] = useState("");
 
         // Координаты маркера на карте
         const [markerLat, setMarkerLat] = useState(BISHKEK[0]);
@@ -57,6 +58,7 @@
               "customerPhone": customerPhone,
               "items":cart,
               "address": address,
+              'weight': weight,
               lat: markerLat,
               long: markerLng,
               // "totalAmount": 25000,
@@ -216,6 +218,17 @@
                       onChange={(e) => setAddress(e.target.value)}
                     />
                   </div>
+
+                  <div className="mb-3">
+  <label className="form-label fw-semibold">Weight (кг)</label>
+  <input
+    type="number"
+    className="form-control rounded-3"
+    placeholder="Введите вес"
+    value={weight}
+    onChange={(e) => setWeight(e.target.value)}
+  />
+</div>
 
                   <div className="d-grid gap-3">
                     <button

@@ -321,7 +321,7 @@ function Products() {
               >
                 <img
                   src={product.image}
-                  alt={product.name}
+                  alt={product.title}
                   className="card-img-top p-4"
                   style={{
                     height: "260px",
@@ -330,7 +330,7 @@ function Products() {
                 />
 
                 <div className="card-body d-flex flex-column">
-                  {/* <h5 className="fw-bold">{product.name}</h5> */}
+                  <h5 className="fw-bold">{product.title}</h5>
 
                   <h4 className="">{product.description}</h4>
 

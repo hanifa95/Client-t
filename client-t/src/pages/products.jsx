@@ -7,7 +7,9 @@ const USD_TO_KGS = 87.85;
 function Products() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [cart, setCart] = useState([]);
+  const [cart, setCart] = useState(() => {
+    return JSON.parse(localStorage.getItem("cart")) || [];
+});
   // const [favorites, setFavorites] = useState([]);
 
   const [search, setSearch] = useState("");
@@ -60,8 +62,31 @@ function Products() {
   ];
 
   const handleAddToCart = (product) => {
-    setCart((prevCart) => [...prevCart, product]);
-  };
+    const existingProduct = cart.find(
+        (item) => item.id === product.id
+    );
+
+    let updatedCart;
+
+    if (existingProduct) {
+        updatedCart = cart.map((item) =>
+            item.id === product.id
+                ? { ...item, count: (Number(item.count) || 1) + 1 }
+                : item
+        );
+    } else {
+        updatedCart = [
+            ...cart,
+            {
+                ...product,
+                count: 1
+            }
+        ];
+    }
+
+    setCart(updatedCart);
+    localStorage.setItem("cart", JSON.stringify(updatedCart));
+};
 
   // const handleFavorite = (product) => {
   //   const exists = favorites.some((item) => item.id === product.id);
